@@ -13,13 +13,14 @@ Use this skill to make RuneLite external plugin changes that are maintainable, J
    - Run `git status --short` and preserve unrelated local changes.
    - Read Gradle files, `runelite-plugin.properties`, the plugin entrypoint, config interfaces, overlays, panels, and nearby tests.
    - Identify Java version, dependency versions, test task, and run task from the target repo instead of assuming defaults.
-2. Search RuneLite core plugins and Plugin Hub for prior art when starting a new plugin, adding a sizable feature, touching an unfamiliar RuneLite API, or looking for examples. Read [references/plugin-hub-research.md](references/plugin-hub-research.md) to check for duplicate/overlapping plugins and find comparable source code.
+2. Search RuneLite core plugins and Plugin Hub for prior art when starting a new plugin, adding a sizable feature, touching an unfamiliar RuneLite API, or looking for examples. Read [references/plugin-hub-research.md](references/plugin-hub-research.md) to check for duplicate/overlapping plugins and find comparable source code, including the user's preferred developer sources and repository filter.
 3. Check compliance before implementing features that touch combat, PvP, menu entries, interfaces, input, player data, HTTP, persistence, external processes, or runtime loading. Read [references/runelite-rules.md](references/runelite-rules.md) first for these areas.
 4. Read [references/runelite-concepts.md](references/runelite-concepts.md) when a feature depends on how OSRS, Jagex servers, the RuneLite client, plugins, and users interact, or when the request is ambiguous about what a plugin can observe, draw, change, or automate. Use the OSRS Wiki for game-mechanics context, terminology, content pages, and player-facing behavior before designing mechanics-heavy features.
    - When a user uses ambiguous player slang, search the OSRS Wiki and inspect redirects/aliases, not just article text. Wiki redirects can map community terms to canonical mechanics; for example, `Cum` redirects to `Unstable Orb`, the Akkha final-phase orb in Tombs of Amascut.
 5. Before implementing game-state, UI, menu, item, scene, var, coordinate, or cache behavior, choose the narrowest RuneLite API surface that models it. Read [references/runelite-api.md](references/runelite-api.md) to map the task to `net.runelite.api`, events, widgets, coordinates, `gameval` constants, and common `net.runelite.client` services.
+   - For 3D models, recoloring, animation, cosmetic scene objects, or model-based hit testing, read [references/models-and-animation.md](references/models-and-animation.md). Treat example plugins as implementation evidence, not quality or compliance endorsements; verify their techniques against the target dependency.
 6. Follow existing architecture. Keep RuneLite boundary code in plugin/event/UI classes and move business logic into small testable services or models when practical. Read [references/plugin-patterns.md](references/plugin-patterns.md) when changing lifecycle, config, overlays, panels, event handling, HTTP/JSON/file I/O, or resources.
-7. Read [references/java-quality.md](references/java-quality.md) when changing or reviewing core Java logic, concurrency/threading, render or tick hot paths, logging, resource handling, nullability, collections, or test quality.
+7. Apply the resource and data efficiency expectations below when designing or reviewing a feature. Read [references/java-quality.md](references/java-quality.md) when changing or reviewing core Java logic, concurrency/threading, render or tick hot paths, logging, resource handling, nullability, collections, or test quality.
 8. Keep Java 11 compatibility. Do not introduce records, text blocks, switch expressions, pattern matching, sealed classes, or APIs added after Java 11.
 9. Add or update focused tests where automated verification is possible. Read [references/testing.md](references/testing.md) before changing behavior or test infrastructure; for behavior that depends on live in-game event sequences, prefer passive capture/replay fixtures combined with unit tests over live-client automation.
 10. For live-client bugs or ambiguous game interactions, use the manual live debugging loop in [references/testing.md](references/testing.md). Before asking the user to reproduce the issue, write an ASCII or Mermaid interaction diagram that includes OSRS/Jagex, RuneLite, the plugin, user actions, observed events, plugin state, and UI/output.
@@ -27,6 +28,21 @@ Use this skill to make RuneLite external plugin changes that are maintainable, J
 12. When preparing a GitHub or Plugin Hub PR, estimate changed-line count with generated files excluded where practical and encourage a reviewable scope. Use `<=1000` changed lines as small, `1001-3000` as medium, and `>3000` as large. For medium PRs, suggest whether a clean split is available; for large PRs, actively recommend splitting into smaller preparatory, mechanical, behavior, and test PRs unless the change is inherently atomic.
 13. When preparing a Plugin Hub submission or release, offer an optional Plugin Hub preflight pipeline based on the upstream packager workflow. Read [references/testing.md](references/testing.md) for the limits of packager CI and RuneLite GitHub App checks.
 14. Never automate RuneScape gameplay or interact with RuneScape through browser/computer-use tools. A clean JVM start is not a passing in-game test.
+
+## Resource and Data Efficiency
+
+- Treat efficient use of RuneLite's client and shared services as a design requirement. Consider client-thread and render time, CPU, allocations, retained memory, disk I/O, and network traffic in proportion to the feature's expected use.
+- For features that collect, persist, or exchange data, establish what information is needed, by whom, how fresh it must be, and how long it must be retained. Assess payload size, send frequency, repeated information, recipient fanout, and join/rejoin or recovery costs as history and Party size grow. Include serialization and receive-side processing in the cost assessment.
+- Actively challenge unnecessarily expensive requests or designs. Explain the concrete resource cost to the user and press for an efficient scope or an explicit product tradeoff when freshness, detail, or retention materially increases that cost. Ask only when that choice affects required behavior; use judgment for routine implementation decisions and respect the user's informed choice.
+- Choose an approach from the actual requirements and transport behavior; do not prescribe a particular protocol or optimization in advance. Preserve correctness and required delivery behavior, account for degraded connections and lifecycle changes, and support meaningful efficiency claims with representative measurements. Distinguish estimates from measurements and report remaining uncertainty.
+- When a design would use RuneLite-hosted or shared resources, especially Party data transport, strongly recommend discussing the intended use and expected load in the RuneLite Discord's `#development` channel early. Use the community guidance in [references/plugin-hub-research.md](references/plugin-hub-research.md) to help the user prepare a focused question; this recommendation is not an automatic approval gate.
+
+## Diagnostic Data and Observation
+
+- Define observability needs before adding diagnostics: identify the question being investigated and collect the smallest relevant state or event data needed to answer it.
+- Make data freshness explicit. Distinguish current observations, cached values, stale values, and unavailable information; preserve observation time and relevant lifecycle context so consumers do not mistake old or missing data for current state.
+- Account for consumer load. Assess how often diagnostic readers request data, how much they request, and the collection, serialization, and processing work each request causes in RuneLite. Keep that cost proportionate to the diagnostic need, including repeated or concurrent readers.
+- Keep observation passive and separate from game actions. Reading or capturing diagnostic data must not trigger gameplay inputs or mutate game state. Apply the existing compliance and privacy rules to any diagnostic interface or export.
 
 ## Implementation Guardrails
 
@@ -71,6 +87,7 @@ When finishing a RuneLite plugin task:
 - Summarize changed files and behavior.
 - Report the approximate PR size bucket when the work is headed for RuneLite or Plugin Hub review, and recommend a smaller split for large diffs or obvious mixed-scope medium diffs.
 - Report automated checks run and any failures or skipped checks.
+- When resource use or data transfer is materially affected, report the expected load, relevant measurements or estimates, and unresolved efficiency tradeoffs.
 - Offer to launch the development client by running `./gradlew run` from the plugin root.
 - Tell the user to follow RuneLite's "Using Jagex Accounts" instructions when logging into the development client: https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
 - Tell the user exactly what to test in game: the golden path, the behavior changed, and edge cases worth exercising.

@@ -28,6 +28,7 @@ Sources:
 ## API Map
 
 - Core game state: `Client`, `GameState`, `WorldView`, `Scene`, `Tile`, `Player`, `NPC`, `Actor`, `TileObject`, `GameObject`, `GroundObject`, `WallObject`, `DecorativeObject`, `Projectile`, `GraphicsObject`.
+- Models and animation: `ModelData`, `Model`, `Mesh`, `NPCComposition`, `Animation`, `AnimationController`, `RuneLiteObject`, and `RuneLiteObjectController`. Read [models-and-animation.md](models-and-animation.md) for ownership, transformation order, scene lifecycle, and source examples.
 - Events: `GameStateChanged`, `GameTick`, `ClientTick`, `PostClientTick`, spawn/despawn events for objects/NPCs/players/items, `ItemContainerChanged`, `StatChanged`, `VarbitChanged`, `ChatMessage`, `WidgetLoaded`, `WidgetClosed`, `MenuOpened`, `MenuEntryAdded`, `PostMenuSort`, `MenuOptionClicked`.
 - Widgets and UI: `Widget`, `WidgetItem`, `WidgetItemOverlay`, `WidgetLoaded`, `WidgetClosed`, `client.getWidget(...)`, widget bounds/canvas bounds, dynamic/static/nested children, item ID/quantity, text, hidden state.
 - Menus: `Menu`, `MenuEntry`, `MenuAction`, `MenuOpened`, `MenuEntryAdded`, `PostMenuSort`, `MenuOptionClicked`. Read menu data for overlays and context; avoid adding entries that send server actions unless Plugin Hub rules clearly permit it.
